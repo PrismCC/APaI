@@ -86,7 +86,7 @@ class Config:
             return True
         return False
 
-    def init_cilent(self):
+    def init_client(self):
         return OpenAI(
             api_key=self.api,
             base_url=self.url,

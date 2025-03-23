@@ -88,7 +88,7 @@ class Log:
     def __init__(self, name, dir_path):
         self.name = name
         self.dir = dir_path
-        self.path = f"{dir_path}/{name}.log"
+        self.path = f"{dir_path}\\{name}.log"
         self.data = []
         self.num = 0
         self.pointer = 0
@@ -159,10 +159,10 @@ def main():
         print("Please configure the config first.")
         return
 
-    client = config.init_cilent()
+    client = config.init_client()
 
     model_name = config.model
-    logs_path = "./logs"
+    logs_path = "logs"
     log = Log(model_name, logs_path)
 
     print(cm.cyan(config))
@@ -173,14 +173,14 @@ def main():
         func = ask.split(" ")[0].lower()
         para = ask.split(" ")[1] if ask.count(" ") > 0 else None
 
-        if func == "e" or func == "exit":
+        if func == "exit":
             print(cm.yellow("Bye!"))
             break
-        elif func == "r" or func == "reset":
+        elif func == "reset":
             log.reset()
             print(cm.yellow("Dialogs are reset."))
             continue
-        elif func == "c" or func == "clean":
+        elif func == "clean":
             log.clean()
             print(cm.yellow("Logs are cleaned."))
             continue
@@ -192,6 +192,7 @@ def main():
                         + " ".join(config.get_model_list())
                     )
                 )
+                print("\n")
                 continue
             model_name = config.match_model(para)
             if not model_name:
@@ -202,22 +203,27 @@ def main():
                         + " ".join(config.get_model_list())
                     )
                 )
+                print("\n")
                 continue
             config.change_model(model_name)
 
             log = Log(model_name, logs_path)
             config.save_config("config.json")
-            print(cm.yellow(f"Model is changed to {model_name}."))
+            print(cm.yellow(f"Model is changed to {model_name}.\n\n"))
             print(cm.cyan(config))
             continue
-        elif func == "l" or func == "len":
+        elif func == "len":
             if para is None:
                 print(cm.yellow("Please input context length."))
                 continue
             config.context_len = int(para)
             config.save_config("config.json")
-            print(cm.yellow(f"Context length is changed to {para}."))
+            print(cm.yellow(f"Context length is changed to {para}.\n\n"))
             print(cm.cyan(config))
+            continue
+        elif func == "log":
+            print(f"model {model_name}'s log opened.")
+            os.startfile(log.path)
             continue
         elif func == "f" or func == "file":
             in_path = "in.txt"
@@ -254,7 +260,7 @@ def main():
             else:
                 print(
                     cm.yellow(
-                        f"Instruction is changed to {para}: {config.get_instruction()}"
+                        f"Instruction is changed to {para}: {config.get_instruction()}\n\n"
                     )
                 )
                 config.save_config("config.json")
@@ -262,17 +268,26 @@ def main():
             continue
         elif func == "h" or func == "help":
             print(cm.magenta("Commands:"))
-            print(cm.magenta("  e/exit                      :  Exit"))
-            print(cm.magenta("  r/reset                     :  Reset dialogs"))
-            print(cm.magenta("  c/clean                     :  Clean logs"))
+            print(cm.magenta("  exit                        :  Exit"))
+            print(cm.magenta("  reset                       :  Reset dialogs"))
+            print(cm.magenta("  clean                       :  Clean logs"))
+            print(cm.magenta("  log                         :  Open log file"))
+            print(cm.magenta("  len   + [context length]    :  Change context length"))
             print(cm.magenta("  m/model + [model name]      :  Change model"))
-            print(cm.magenta("  l/len   + [context length]  :  Change context length"))
-            print(cm.magenta("  f/file  + [file name]       :  Read from file"))
             print(cm.magenta("  i/ins   + [instruction key] :  Set instruction"))
+            print(cm.magenta("  f/file  + [file name]       :  Read from file"))
             print(cm.magenta("  h/help                      :  Show help"))
             print(cm.magenta("  [others]                    :  Chat with AI"))
-            print()
+            print("\n")
             continue
+
+        # Maybe the user input a wrong command
+        if file == "" and len(ask) < 10:
+            confirm = input(
+                cm.yellow("Are you sure to send this short message? (y/n) ")
+            )
+            if confirm.lower() != "y":
+                continue
 
         print(
             "\nUser: " + cm.cyan(f"[{log.num}|{config.context_len}]\n") + cm.green(ask)
@@ -286,7 +301,7 @@ def main():
         stream = create_stream(client, config.model, message)
         print(f"\n{model_name}:")
         response = print_stream(stream)
-        print(cm.yellow("\n--END--\n\n"))
+        print(cm.yellow("\n\n--END--\n\n"))
         log.append(Dialog(ask, response, file))
         log.save()
 
