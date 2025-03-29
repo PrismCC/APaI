@@ -26,7 +26,7 @@ class Agent:
         self.instruction = instr_kv[1]
         self.context_len = context_len
 
-        self.log = Log(Path("log") / f"{model_name}.log")
+        self.log = Log(Path("logs") / f"{model_name}.log")
         self.message = Message(self.instruction)
         self.dialog_count = 0
 
