@@ -1,14 +1,9 @@
-[火山方舟]
+[HuoshanFangzhou]
 api = "【你的火山方舟API】"
 url = "https://ark.cn-beijing.volces.com/api/v3"
-models = [
-    "deepseek-v3-241226",
-    "deepseek-r1-250120",
-]
+models = ["deepseek-v3-241226", "deepseek-r1-250120"]
 
-[其他服务商]
+[OtherProvider]
 api = "【服务商API】"
 url = "【调用url】"
-models = [
-    "【支持的模型列表】",
-]
+models = ["【支持的模型列表】"]

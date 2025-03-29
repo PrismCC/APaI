@@ -1,5 +1,4 @@
 import os
-from collections.abc import Generator
 from pathlib import Path
 
 from openai import OpenAI, Stream
@@ -74,29 +73,32 @@ class Agent:
             stream=True,
         )
 
-    def read_stream(self, stream: Stream) -> Generator[dict, None, str]:
-        content = ""
+    def read_stream(self, console: Console, stream: Stream) -> str:
+        content_buffer = []
+        reasoning_buffer = []
         for chunk in stream:
             if (
                 hasattr(chunk.choices[0].delta, "reasoning_content")
                 and chunk.choices[0].delta.reasoning_content
             ):
-                yield {
-                    "type": "reasoning",
-                    "content": chunk.choices[0].delta.reasoning_content,
-                }
+                reasoning_buffer.append(chunk.choices[0].delta.reasoning_content)
+                console.print(
+                    chunk.choices[0].delta.reasoning_content,
+                    style="dim magenta",
+                    end="",
+                )
             elif chunk.choices[0].delta.content:
-                content += chunk.choices[0].delta.content
-                yield {
-                    "type": "content",
-                    "content": chunk.choices[0].delta.content,
-                }
-        return content
+                content_buffer.append(chunk.choices[0].delta.content)
+                console.print(
+                    chunk.choices[0].delta.content,
+                    style="cyan",
+                    end="",
+                )
+        return "".join(content_buffer) + "\n"
 
     def chat(self, ask: str, file: str, console: Console) -> None:
         self.add_dialog("user", file + "/n" + ask)
         stream = self.create_stream()
-        generator = self.read_stream(stream)
         answer = ""
 
         if self.dialog_count < self.context_len:
@@ -116,16 +118,9 @@ class Agent:
         else:
             console.print(f"user:\n[file content]\n{ask}", style="blue")
 
-        console.print(f"{self.model_name}: ", style="cyan")
+        console.print(f"{self.model_name}:", style="cyan")
 
-        try:
-            while True:
-                response = next(generator)
-                if response["type"] == "reasoning":
-                    console.print(response["content"], style="dim magenta")
-                elif response["type"] == "content":
-                    console.print(Markdown(response["content"]))
-        except StopIteration as e:
-            answer = e.value
-
+        answer = self.read_stream(console, stream)
+        console.print("\nMarkdown:\n", style="green")
+        console.print(Markdown(answer))
         self.add_dialog("assistant", answer)

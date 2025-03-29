@@ -56,7 +56,8 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
 
     def change_model(model_name: str) -> None:
         nonlocal agent
-        if env.change_model(env.match_model_name(model_name)):
+        model_name = env.match_model_name(model_name)
+        if env.change_model(model_name):
             console.print(f"Model changed to {model_name}.", style="cyan")
             agent = env.init_agent()
             console.print(agent.get_info_table())
@@ -65,6 +66,7 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
 
     def change_instr(instr_key: str) -> None:
         nonlocal agent
+        instr_key = env.match_instr_key(instr_key)
         if env.change_instr_key(instr_key):
             console.print(f"Instruction changed to {instr_key}.", style="cyan")
             agent = env.init_agent()
@@ -144,7 +146,7 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
 def main() -> None:
     console = Console()
     console.print("This is APaI v0.2.0", style="bold green")
-    console.print("Type 'help' for help, or read README.md.", style="bold green")
+    console.print("Type 'help' for help, or read README.md.", style="dim green")
 
     api_path = Path("api_bin.toml")
     instr_path = Path("instr_bin.toml")
@@ -158,7 +160,7 @@ def main() -> None:
         return
     while env.config.model_name == "":
         console.print("Please select a model from the following list:", style="yellow")
-        console.print(env.model_name_list, style="yellow")
+        console.print(env.model_name_list)
         model_name = console.input("Model name: ")
         if not env.change_model(env.match_model_name(model_name)):
             console.print("Model not found, please try again.", style="yellow")
