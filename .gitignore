@@ -3,3 +3,6 @@
 __pycache__/
 logs/
 in.txt
+config.json
+api_bin.json
+instr_bin.json

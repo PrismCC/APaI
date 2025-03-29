@@ -1,67 +1,12 @@
+# 生成对话消息
 class Message:
-    def __init__(self):
-        self.messages = []
+    def __init__(self, instruction: str) -> None:
+        self.dialogs: list[dict] = []
+        self.instruction: dict = {"role": "system", "content": instruction}
 
-    def add_dialog(self, dialog):
-        if dialog.file != "":
-            self.messages.append(
-                {
-                    "role": "user",
-                    "content": dialog.file,
-                }
-            )
-        self.messages.append(
-            {
-                "role": "user",
-                "content": dialog.ask,
-            }
-        )
-        self.messages.append(
-            {
-                "role": "assistant",
-                "content": dialog.response,
-            }
-        )
+    # role只能为user或者assistant
+    def add_dialog(self, role: str, content: str) -> None:
+        self.dialogs.append({"role": role, "content": content})
 
-    def add_ask(self, ask):
-        self.messages.append(
-            {
-                "role": "user",
-                "content": ask,
-            }
-        )
-
-    def add_instruction(self, instruction):
-        self.messages.append(
-            {
-                "role": "system",
-                "content": instruction,
-            }
-        )
-
-    def add_file(self, file):
-        self.messages.append(
-            {
-                "role": "user",
-                "content": file,
-            }
-        )
-
-    def get_messages(self):
-        return self.messages
-
-    @classmethod
-    def generate_message(
-        cls, log, ask: str, file: str, context_len: int, instruction: str = ""
-    ):
-        message = Message()
-        if instruction:
-            message.add_instruction(instruction)
-        start_index = log.num - context_len if log.num > context_len else 0
-        for i in range(start_index, log.num):
-            dialog = log.data[i]
-            message.add_dialog(dialog)
-        if file != "":
-            message.add_file(file)
-        message.add_ask(ask)
-        return message.get_messages()
+    def generate_messages(self, context_len: int) -> list:
+        return [self.instruction] + self.dialogs[-context_len:]

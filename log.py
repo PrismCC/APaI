@@ -1,46 +1,28 @@
+from datetime import datetime
 from pathlib import Path
 
 
 class Log:
-    def __init__(self, name, dir_path):
-        self.name = name
-        self.dir = dir_path
-        self.path = f"{dir_path}\\{name}.log"
-        self.data = []
-        self.num = 0
-        self.pointer = 0
+    double_line = "=" * 50
+    single_line = "-" * 50
 
-    def save(self):
-        dir_path = Path(self.dir)
-        if not dir_path.exists():
-            dir_path.mkdir(parents=True)
+    def __init__(self, path: Path) -> None:
+        self.path = path
 
-        with open(self.path, "a", encoding="utf-8") as f:
-            for i in range(self.pointer, self.num):
-                dialog = self.data[i]
-                if dialog.file != "":
-                    f.write(
-                        f"{dialog.time}\n\nFile:\n{dialog.file}\n\nUser:\n{dialog.ask}\n\n{self.name}:\n{dialog.response}\n\n--------------------------------\n\n"
-                    )
-                else:
-                    f.write(
-                        f"{dialog.time}\n\nUser:\n{dialog.ask}\n\n{self.name}:\n{dialog.response}\n\n--------------------------------\n\n"
-                    )
-        self.pointer = self.num
+    def write_header(self, model_name: str, instr_key: str) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        with self.path.open("a", encoding="utf-8") as f:
+            f.write(f"{self.double_line}\n\n")
+            f.write(f"Model: {model_name}\n")
+            f.write(f"Instruction: {instr_key}\n\n")
 
-    def reset(self):
-        self.save()
-        self.data = []
-        self.num = 0
-        self.pointer = 0
+    def write_dialog(self, role: str, content: str) -> None:
+        time_string = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with self.path.open("a", encoding="utf-8") as f:
+            f.write(f"{self.single_line}\n\n")
+            f.write(f"{time_string}\n")
+            f.write(f"{role}:\n")
+            f.write(f"{content}\n\n")
 
-    def clean(self):
-        self.data = []
-        self.num = 0
-        self.pointer = 0
-        with open(self.path, "w") as f:
-            pass
-
-    def append(self, dialog):
-        self.data.append(dialog)
-        self.num += 1
+    def clean(self) -> None:
+        self.path.unlink(missing_ok=True)

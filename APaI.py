@@ -1,188 +1,169 @@
+from __future__ import annotations
+
 import os
-from openai import OpenAI
+import sys
+from pathlib import Path
 
-from colormanager import ColorManager as cm
-from config import Config
-from dialog import Dialog
-from log import Log
-from message import Message
+from rich.console import Console
 
-
-def create_stream(client: OpenAI, model: str, messages: list):
-    return client.chat.completions.create(
-        model=model,
-        messages=messages,
-        stream=True,
-    )
+from environment import Environment
 
 
-def print_stream(stream):
-    reasoning_content = ""
-    content = ""
-    for chunk in stream:
-        if (
-            hasattr(chunk.choices[0].delta, "reasoning_content")
-            and chunk.choices[0].delta.reasoning_content
-        ):
-            reasoning_content += chunk.choices[0].delta.reasoning_content
-            print(cm.magenta(chunk.choices[0].delta.reasoning_content), end="")
+def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR0915
+    agent = env.init_agent()
+    console.print(agent.get_info_table())
+
+    def exit_program() -> None:
+        console.print("Bye!", style="bold green")
+        sys.exit(0)
+
+    def help_message() -> None:
+        console.print("Help    message:", style="bold green")
+        console.print("exit:   Exit the program", style="bold green")
+        console.print("reset:  Reset agent's memory", style="bold green")
+        console.print("log:    Open log file", style="bold green")
+        console.print("clean:  Clean log file", style="bold green")
+        console.print("save:   Save the current conversation", style="bold green")
+        console.print("load:   Load a previous conversation", style="bold green")
+        console.print("model:  Change the model", style="bold green")
+        console.print("instr:  Change the instruction", style="bold green")
+        console.print("length: Change the context length", style="bold green")
+        console.print("file:   Input file content", style="bold green")
+        console.print("help:   Show this help message", style="bold green")
+        console.print("others: Send a message to the agent", style="bold green")
+        console.print(
+            "Note: If your first line is empty, multi-line mode will be enabled.",
+            style="dim green",
+        )
+        console.print(
+            "      In this mode, you should end your input with a blank line.",
+            style="dim green",
+        )
+
+    def reset_agent() -> None:
+        agent.reset_message()
+        console.print("Agent's memory has been reset.", style="cyan")
+
+    def open_log() -> None:
+        if agent.open_log():
+            console.print("Log file opened.", style="cyan")
         else:
-            content += chunk.choices[0].delta.content
-            print(cm.blue(chunk.choices[0].delta.content), end="")
-    return content
+            console.print("Log file not found.", style="red")
 
+    def clean_log() -> None:
+        agent.clean_log()
+        console.print("Log file cleaned.", style="cyan")
 
-def main():
-    config: Config = Config.read("api_bins.json", "config.json", "instructions.json")
-    if config is None:
-        print("Please configure the config first.")
-        return
+    def change_model(model_name: str) -> None:
+        nonlocal agent
+        if env.change_model(env.match_model_name(model_name)):
+            console.print(f"Model changed to {model_name}.", style="cyan")
+            agent = env.init_agent()
+            console.print(agent.get_info_table())
+        else:
+            console.print("Model not found, please try again.", style="red")
 
-    client = config.init_client()
+    def change_instr(instr_key: str) -> None:
+        nonlocal agent
+        if env.change_instr_key(instr_key):
+            console.print(f"Instruction changed to {instr_key}.", style="cyan")
+            agent = env.init_agent()
+            console.print(agent.get_info_table())
+        else:
+            console.print("Instruction not found, please try again.", style="red")
 
-    model_name = config.model
-    logs_path = "logs"
-    log = Log(model_name, logs_path)
+    def change_context_len(context_len: int) -> None:
+        nonlocal agent
+        env.change_context_len(context_len)
+        agent = env.init_agent()
+        console.print(f"Context length changed to {context_len}.", style="cyan")
+        console.print(agent.get_info_table())
 
-    print(cm.cyan(config))
+    def get_file_input(file_path: Path = Path(".in.txt")) -> tuple[str, str]:
+        if not file_path.exists():
+            if file_path == Path(".in.txt"):
+                file_path.touch()
+            else:
+                console.print(f"File {file_path} does not exist.", style="red")
+                return "", ""
+        os.startfile(file_path)  # noqa: S606
+        terminal_input = console.input(
+            f"{file_path} opened, input your content here and save it\n"
+            "You can also add some content in terminal and press Enter to continue",
+        )
+        with file_path.open("r", encoding="utf-8") as f:
+            file_content = f.read()
+        return file_content, terminal_input
+
+    def get_multi_line_input() -> str:
+        console.print("[Multi-line mode]", style="magenta")
+        lines = []
+        while True:
+            line = console.input()
+            if line.strip() == "":
+                break
+            lines.append(line)
+        return "\n".join(lines)
+
+    command_map = {
+        "exit": lambda: exit_program(),
+        "help": lambda: help_message(),
+        "reset": lambda: reset_agent(),
+        "log": lambda: open_log(),
+        "clean": lambda: clean_log(),
+        "model": lambda name: change_model(name),
+        "instr": lambda key: change_instr(key),
+        "length": lambda length: change_context_len(int(length)),
+    }
 
     while True:
-        ask = input("> ").strip()
+        ask = ""
         file = ""
-        func = ask.split(" ")[0].lower()
-        para = ask.split(" ")[1] if ask.count(" ") > 0 else None
-
-        if func == "exit":
-            print(cm.yellow("Bye!"))
-            break
-        elif func == "reset":
-            log.reset()
-            print(cm.yellow("Dialogs are reset."))
-            continue
-        elif func == "clean":
-            log.clean()
-            print(cm.yellow("Logs are cleaned."))
-            continue
-        elif func == "m" or func == "model":
-            if para is None:
-                print(
-                    cm.yellow(
-                        "Please input model name from:\n"
-                        + " ".join(config.get_model_list())
-                    )
-                )
-                print("\n")
+        user_input = console.input("> ")
+        if user_input.strip() == "":
+            ask = get_multi_line_input()
+        else:
+            cmd, *args = user_input.split()
+            cmd = cmd.lower()
+            if cmd in command_map:
+                try:
+                    command_map[cmd](*args)
+                except TypeError:
+                    console.print(f"Invalid arguments for command '{cmd}'", style="red")
                 continue
-            model_name = config.match_model(para)
-            if not model_name:
-                print(
-                    cm.yellow(
-                        "Model not found. "
-                        + "Please input model name from:\n"
-                        + " ".join(config.get_model_list())
-                    )
-                )
-                print("\n")
-                continue
-            config.change_model(model_name)
-
-            log = Log(model_name, logs_path)
-            config.save_config("config.json")
-            print(cm.yellow(f"Model is changed to {model_name}.\n\n"))
-            print(cm.cyan(config))
-            continue
-        elif func == "len":
-            if para is None:
-                print(cm.yellow("Please input context length."))
-                continue
-            config.context_len = int(para)
-            config.save_config("config.json")
-            print(cm.yellow(f"Context length is changed to {para}.\n\n"))
-            print(cm.cyan(config))
-            continue
-        elif func == "log":
-            print(f"model {model_name}'s log opened.")
-            os.startfile(log.path)
-            continue
-        elif func == "f" or func == "file":
-            in_path = "in.txt"
-            if para is not None:
-                in_path = para
-            if not os.path.exists(in_path):
-                with open(in_path, "w", encoding="utf-8") as f:
-                    f.write("Please input the question here.")
-            os.startfile(in_path)
-            ask = input(
-                cm.yellow(
-                    "Please input the question after reading the file. Input 'exit' to cancel:\n"
-                )
-            ).strip()
-            if ask.lower() == "exit":
-                print(cm.yellow("Canceled.\n"))
-                continue
-            with open(in_path, "r", encoding="utf-8") as f:
-                file = f.read()
-        elif func == "i" or func == "ins":
-            if para is None:
-                print(
-                    cm.yellow(
-                        f"Please input instruction key from:\n{config.instruction_bin.keys()}"
-                    )
-                )
-            elif not config.change_instruction_key(para):
-                print(
-                    cm.yellow(
-                        f"Instruction key not found. "
-                        + f"Please input instruction key from:\n{config.instruction_bin.keys()}"
-                    )
-                )
+            if cmd == "file":
+                file, ask = get_file_input(Path(args[0]) if args else Path(".in.txt"))
+                if file == "" and ask == "":
+                    continue
             else:
-                print(
-                    cm.yellow(
-                        f"Instruction is changed to {para}: {config.get_instruction()}\n\n"
-                    )
-                )
-                config.save_config("config.json")
-                print(cm.cyan(config))
-            continue
-        elif func == "h" or func == "help":
-            print(cm.magenta("Commands:"))
-            print(cm.magenta("  exit                        :  Exit"))
-            print(cm.magenta("  reset                       :  Reset dialogs"))
-            print(cm.magenta("  clean                       :  Clean logs"))
-            print(cm.magenta("  log                         :  Open log file"))
-            print(cm.magenta("  len   + [context length]    :  Change context length"))
-            print(cm.magenta("  m/model + [model name]      :  Change model"))
-            print(cm.magenta("  i/ins   + [instruction key] :  Set instruction"))
-            print(cm.magenta("  f/file  + [file name]       :  Read from file"))
-            print(cm.magenta("  h/help                      :  Show help"))
-            print(cm.magenta("  [others]                    :  Chat with AI"))
-            print("\n")
-            continue
+                ask = user_input
+        if ask:
+            agent.chat(ask, file, console)
 
-        # Maybe the user input a wrong command
-        if file == "" and len(ask) < 10:
-            confirm = input(
-                cm.yellow("Are you sure to send this short message? (y/n) ")
-            )
-            if confirm.lower() != "y":
-                continue
 
-        print(
-            "\nUser: " + cm.cyan(f"[{log.num}|{config.context_len}]\n") + cm.green(ask)
-        )
-        if log.num > config.context_len:
-            print(cm.yellow(f"{log.num - config.context_len} dialogs are omitted."))
+def main() -> None:
+    console = Console()
+    console.print("This is APaI v0.2.0", style="bold green")
+    console.print("Type 'help' for help, or read README.md.", style="bold green")
 
-        message = Message.generate_message(
-            log, ask, file, config.context_len, config.get_instruction()
-        )
-        stream = create_stream(client, config.model, message)
-        print(f"\n{model_name}:")
-        response = print_stream(stream)
-        print(cm.yellow("\n\n--END--\n\n"))
-        log.append(Dialog(ask, response, file))
-        log.save()
+    api_path = Path("api_bin.toml")
+    instr_path = Path("instr_bin.toml")
+    config_path = Path("config.toml")
+    env = Environment(api_path, instr_path, config_path)
+
+    # 检查配置文件
+    if env.model_name_list == []:
+        console.print("No model found in api_bin.toml", style="red")
+        console.print("Read the README.md file for more information.", style="red")
+        return
+    while env.config.model_name == "":
+        console.print("Please select a model from the following list:", style="yellow")
+        console.print(env.model_name_list, style="yellow")
+        model_name = console.input("Model name: ")
+        if not env.change_model(env.match_model_name(model_name)):
+            console.print("Model not found, please try again.", style="yellow")
+
+    main_loop(console, env)
 
 
 if __name__ == "__main__":
