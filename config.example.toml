@@ -1,6 +1,6 @@
 provider = ""
 api = ""
 url = ""
-model_name = ""
+model_id = ""
 instr_key = "empty"
 context_len = 100

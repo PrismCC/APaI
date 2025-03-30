@@ -26,7 +26,7 @@ class Config:
     provider: str
     api: str
     url: str
-    model_name: str
+    model_id: str
     instr_key: str
     context_len: int
 
@@ -40,15 +40,15 @@ class Environment:
         with config_path.open("rb") as f:
             self.config = Config(**tomllib.load(f))
         self.config_path = config_path
-        self.model_name_list = [
+        self.model_id_list = [
             name for api in self.api_dict.values() for name in api.models
         ]
         self.instr_key_list = list(self.instr_dict.keys())
 
-    def match_model_name(self, model_name: str) -> str:
+    def match_model_id(self, model_id: str) -> str:
         match_list = difflib.get_close_matches(
-            model_name,
-            self.model_name_list,
+            model_id,
+            self.model_id_list,
             cutoff=0.2,
         )
         if match_list:
@@ -74,14 +74,14 @@ class Environment:
     # 2. 保存config
     # 3. 重建Agent对象(Log Message OpenAI)
 
-    def change_model(self, model_name: str) -> bool:
-        if model_name:
+    def change_model(self, model_id: str) -> bool:
+        if model_id:
             for provider, api in self.api_dict.items():
-                if model_name in api.models:
+                if model_id in api.models:
                     self.config.provider = provider
                     self.config.api = api.api
                     self.config.url = api.url
-                    self.config.model_name = model_name
+                    self.config.model_id = model_id
                     self.save_config()
                     return True
         return False
@@ -105,7 +105,7 @@ class Environment:
                 timeout=1800,
             ),
             self.config.provider,
-            self.config.model_name,
+            self.config.model_id,
             (
                 self.config.instr_key,
                 self.instr_dict[self.config.instr_key].content,
@@ -115,7 +115,7 @@ class Environment:
 
     def config_to_string(self) -> str:
         return (
-            f"model: {self.config.model_name}\n"
+            f"model: {self.config.model_id}\n"
             f"instruction: {self.config.instr_key}\n"
             f"context length: {self.config.context_len}\n"
         )

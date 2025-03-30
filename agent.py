@@ -15,22 +15,22 @@ class Agent:
         self,
         client: OpenAI,
         api_provider: str,
-        model_name: str,
+        model_id: str,
         instr_kv: tuple[str, str],
         context_len: int,
     ) -> None:
         self.client = client
         self.api_provider = api_provider
-        self.model_name = model_name
+        self.model_id = model_id
         self.instr_key = instr_kv[0]
         self.instruction = instr_kv[1]
         self.context_len = context_len
 
-        self.log = Log(Path("logs") / f"{model_name}.log")
+        self.log = Log(Path("logs") / f"{model_id}.log")
         self.message = Message(self.instruction)
         self.dialog_count = 0
 
-        self.log.write_header(model_name, self.instr_key)
+        self.log.write_header(model_id, self.instr_key)
 
     def add_dialog(self, role: str, content: str) -> None:
         self.dialog_count += 1
@@ -40,8 +40,8 @@ class Agent:
     def reset_message(self) -> None:
         self.dialog_count = 0
         self.message = Message(self.instruction)
-        self.log = Log(Path("log") / f"{self.model_name}.log")
-        self.log.write_header(self.model_name, self.instruction)
+        self.log = Log(Path("log") / f"{self.model_id}.log")
+        self.log.write_header(self.model_id, self.instruction)
 
     def clean_log(self) -> None:
         self.log.clean()
@@ -55,12 +55,12 @@ class Agent:
     def get_info_table(self) -> Table:
         table = Table(show_header=True, header_style="bold magenta")
         table.add_column("Provider")
-        table.add_column("Model Name")
+        table.add_column("Model ID")
         table.add_column("Instr Key")
         table.add_column("Context Length")
         table.add_row(
             self.api_provider,
-            self.model_name,
+            self.model_id,
             self.instr_key,
             str(self.context_len),
         )
@@ -68,7 +68,7 @@ class Agent:
 
     def create_stream(self) -> Stream:
         return self.client.chat.completions.create(
-            model=self.model_name,
+            model=self.model_id,
             messages=self.message.generate_messages(self.context_len),
             stream=True,
         )
@@ -118,9 +118,9 @@ class Agent:
         else:
             console.print(f"user:\n[file content]\n{ask}", style="blue")
 
-        console.print(f"{self.model_name}:", style="cyan")
+        console.print(f"{self.model_id}:", style="cyan")
 
         answer = self.read_stream(console, stream)
-        console.print("\nMarkdown:\n", style="green")
+        console.print("\n\nMarkdown:\n", style="green")
         console.print(Markdown(answer))
         self.add_dialog("assistant", answer)

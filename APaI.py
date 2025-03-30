@@ -54,11 +54,11 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
         agent.clean_log()
         console.print("Log file cleaned.", style="cyan")
 
-    def change_model(model_name: str) -> None:
+    def change_model(model_id: str) -> None:
         nonlocal agent
-        model_name = env.match_model_name(model_name)
-        if env.change_model(model_name):
-            console.print(f"Model changed to {model_name}.", style="cyan")
+        model_id = env.match_model_id(model_id)
+        if env.change_model(model_id):
+            console.print(f"Model changed to {model_id}.", style="cyan")
             agent = env.init_agent()
             console.print(agent.get_info_table())
         else:
@@ -154,15 +154,15 @@ def main() -> None:
     env = Environment(api_path, instr_path, config_path)
 
     # 检查配置文件
-    if env.model_name_list == []:
+    if env.model_id_list == []:
         console.print("No model found in api_bin.toml", style="red")
         console.print("Read the README.md file for more information.", style="red")
         return
-    while env.config.model_name == "":
+    while env.config.model_id == "":
         console.print("Please select a model from the following list:", style="yellow")
-        console.print(env.model_name_list)
-        model_name = console.input("Model name: ")
-        if not env.change_model(env.match_model_name(model_name)):
+        console.print(env.model_id_list)
+        model_id = console.input("Model name: ")
+        if not env.change_model(env.match_model_id(model_id)):
             console.print("Model not found, please try again.", style="yellow")
 
     main_loop(console, env)
