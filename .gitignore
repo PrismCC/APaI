@@ -3,6 +3,7 @@
 __pycache__/
 logs/
 .in.txt
+APaI.bat
 config.toml
 api_bin.toml
 instr_bin.toml
