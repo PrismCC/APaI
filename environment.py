@@ -119,3 +119,34 @@ class Environment:
             f"instruction: {self.config.instr_key}\n"
             f"context length: {self.config.context_len}\n"
         )
+
+    # 保证存档文件存在
+    def read_save(self, save_path: Path) -> Agent:
+        dialogs = []
+        with save_path.open("r", encoding="utf-8") as f:
+            model_id, instr_key = f.readline().split(", ")
+            model_id = model_id.strip()
+            instr_key = instr_key.strip()
+            f.readline()
+            while True:
+                role = f.readline().strip()
+                if not role:
+                    break
+                lines = []
+                while True:
+                    line = f.readline()
+                    if line.strip() == "===APaI===":
+                        break
+                    lines.append(line)
+                dialogs.append(
+                    {
+                        "role": role,
+                        "content": "".join(lines).strip(),
+                    },
+                )
+        self.change_model(model_id)
+        self.change_instr_key(instr_key)
+        agent = self.init_agent()
+        agent.message.dialogs = dialogs
+        agent.change_log(save_path)
+        return agent

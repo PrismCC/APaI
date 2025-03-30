@@ -26,12 +26,10 @@ class Agent:
         self.instruction = instr_kv[1]
         self.context_len = context_len
 
-        self.log = Log(Path("logs") / f"{model_id}.log")
+        self.log = Log(model_id, instr_kv[0], Path("logs") / f"{model_id}.log")
         self.message = Message(self.instruction)
         self.dialog_count = 0
         self.last_answer = ""
-
-        self.log.write_header(model_id, self.instr_key)
 
     def add_dialog(self, role: str, content: str) -> None:
         self.message.add_dialog(role, content)
@@ -40,17 +38,24 @@ class Agent:
     def reset_message(self) -> None:
         self.dialog_count = 0
         self.message = Message(self.instruction)
-        self.log = Log(Path("log") / f"{self.model_id}.log")
-        self.log.write_header(self.model_id, self.instruction)
+        self.log = Log(
+            self.model_id,
+            self.instr_key,
+            Path("logs") / f"{self.model_id}.log",
+        )
 
     def clean_log(self) -> None:
         self.log.clean()
 
     def open_log(self) -> bool:
-        if self.log.path.exists():
-            os.startfile(self.log.path)  # noqa: S606
+        if self.log.log_path.exists():
+            os.startfile(self.log.log_path)  # noqa: S606
             return True
         return False
+
+    def change_log(self, save_path: Path) -> None:
+        self.log.save_path = save_path
+        self.log.header_written = True
 
     def get_info_table(self) -> Table:
         table = Table(show_header=True, header_style="bold magenta")
@@ -97,7 +102,7 @@ class Agent:
         return "".join(content_buffer) + "\n"
 
     def chat(self, ask: str, file: str, console: Console) -> None:
-        self.add_dialog("user", file + "/n" + ask)
+        self.add_dialog("user", file + ask)
         self.dialog_count += 1
         stream = self.create_stream()
         answer = ""

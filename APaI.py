@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import sys
 from pathlib import Path
 
@@ -83,6 +84,24 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
         console.print(f"Context length changed to {context_len}.", style="cyan")
         console.print(agent.get_info_table())
 
+    def save(save_name: str) -> None:
+        nonlocal agent
+        save_path = Path("saves") / f"{save_name}.apai"
+        old_path = agent.log.save_path
+        shutil.copy(old_path, save_path)
+        agent.change_log(save_path)
+        console.print(f"Conversation saved to {save_path}.", style="cyan")
+
+    def load(save_name: str) -> None:
+        nonlocal agent
+        save_path = Path("saves") / f"{save_name}.apai"
+        if not save_path.exists():
+            console.print(f"Save file {save_path} does not exist.", style="red")
+            return
+        agent = env.read_save(save_path)
+        console.print(f"Conversation loaded from {save_path}.", style="cyan")
+        console.print(agent.get_info_table())
+
     def show_markdown(console: Console) -> None:
         agent.show_markdown(console)
 
@@ -94,9 +113,15 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
                 console.print(f"File {file_path} does not exist.", style="red")
                 return "", ""
         os.startfile(file_path)  # noqa: S606
+        console.print(
+            f"{file_path} opened, input your content here and save it\n",
+            style="green",
+        )
         terminal_input = console.input(
-            f"{file_path} opened, input your content here and save it\n"
-            "You can also add some content in terminal and press Enter to continue\n",
+            Text(
+                "You can add some content in terminal and press Enter to continue\n",
+                style="dim green",
+            ),
         )
         with file_path.open("r", encoding="utf-8") as f:
             file_content = f.read()
@@ -136,6 +161,8 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
         "reset": lambda: reset_agent(),
         "log": lambda: open_log(),
         "clean": lambda: clean_log(),
+        "save": lambda name: save(name),
+        "load": lambda name: load(name),
         "model": lambda name: change_model(name),
         "instr": lambda key: change_instr(key),
         "length": lambda length: change_context_len(int(length)),
@@ -161,9 +188,10 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
                 file, ask = get_file_input(Path(args[0]) if args else Path(".in.txt"))
                 if file == "" and ask == "":
                     continue
+                file += "\n"
             else:
                 ask = user_input
-        if check_input(ask):
+        if file or check_input(ask):
             agent.chat(ask, file, console)
 
 
