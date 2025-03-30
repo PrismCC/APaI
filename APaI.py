@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 from rich.console import Console
+from rich.text import Text
 
 from environment import Environment
 
@@ -29,6 +30,7 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
         console.print("instr:  Change the instruction", style="bold green")
         console.print("length: Change the context length", style="bold green")
         console.print("file:   Input file content", style="bold green")
+        console.print("md:     Render last output as markdown", style="bold green")
         console.print("help:   Show this help message", style="bold green")
         console.print("others: Send a message to the agent", style="bold green")
         console.print(
@@ -81,6 +83,9 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
         console.print(f"Context length changed to {context_len}.", style="cyan")
         console.print(agent.get_info_table())
 
+    def show_markdown(console: Console) -> None:
+        agent.show_markdown(console)
+
     def get_file_input(file_path: Path = Path(".in.txt")) -> tuple[str, str]:
         if not file_path.exists():
             if file_path == Path(".in.txt"):
@@ -107,6 +112,24 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
             lines.append(line)
         return "\n".join(lines)
 
+    def check_input(input_str: str) -> bool:
+        if input_str.strip() == "":
+            return False
+        short_text_threshold = 10
+        if len(input_str) < short_text_threshold:
+            confirm = (
+                console.input(
+                    Text(
+                        "Are you sure you want to send this short message? (y/n): ",
+                        style="bold yellow",
+                    ),
+                )
+                .strip()
+                .lower()
+            )
+            return confirm == "y"
+        return True
+
     command_map = {
         "exit": lambda: exit_program(),
         "help": lambda: help_message(),
@@ -116,6 +139,7 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
         "model": lambda name: change_model(name),
         "instr": lambda key: change_instr(key),
         "length": lambda length: change_context_len(int(length)),
+        "md": lambda: show_markdown(console),
     }
 
     while True:
@@ -139,7 +163,7 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
                     continue
             else:
                 ask = user_input
-        if ask:
+        if check_input(ask):
             agent.chat(ask, file, console)
 
 

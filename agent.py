@@ -29,6 +29,7 @@ class Agent:
         self.log = Log(Path("logs") / f"{model_id}.log")
         self.message = Message(self.instruction)
         self.dialog_count = 0
+        self.last_answer = ""
 
         self.log.write_header(model_id, self.instr_key)
 
@@ -121,6 +122,13 @@ class Agent:
         console.print(f"{self.model_id}:", style="cyan")
 
         answer = self.read_stream(console, stream)
-        console.print("\n\nMarkdown:\n", style="green")
-        console.print(Markdown(answer))
+        console.print("\n--END--\n", style="yellow")
+        self.last_answer = answer
         self.add_dialog("assistant", answer)
+
+    def show_markdown(self, console: Console) -> None:
+        if self.last_answer == "":
+            console.print("No content to show", style="red")
+            return
+        console.print("Markdown:\n", style="green")
+        console.print(Markdown(self.last_answer))
