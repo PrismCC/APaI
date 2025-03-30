@@ -9,4 +9,5 @@ class Message:
         self.dialogs.append({"role": role, "content": content})
 
     def generate_messages(self, context_len: int) -> list:
-        return [self.instruction] + self.dialogs[-context_len:]
+        # dialogs存储的是单次对话 而content_len以一问一答计数 因此要乘二
+        return [self.instruction] + self.dialogs[-context_len * 2 :]

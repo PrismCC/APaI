@@ -2,6 +2,7 @@
 .vscode/
 __pycache__/
 logs/
+saves/
 .in.txt
 APaI.bat
 config.toml

@@ -34,7 +34,6 @@ class Agent:
         self.log.write_header(model_id, self.instr_key)
 
     def add_dialog(self, role: str, content: str) -> None:
-        self.dialog_count += 1
         self.message.add_dialog(role, content)
         self.log.write_dialog(role, content)
 
@@ -99,6 +98,7 @@ class Agent:
 
     def chat(self, ask: str, file: str, console: Console) -> None:
         self.add_dialog("user", file + "/n" + ask)
+        self.dialog_count += 1
         stream = self.create_stream()
         answer = ""
 

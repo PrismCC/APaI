@@ -96,7 +96,7 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
         os.startfile(file_path)  # noqa: S606
         terminal_input = console.input(
             f"{file_path} opened, input your content here and save it\n"
-            "You can also add some content in terminal and press Enter to continue",
+            "You can also add some content in terminal and press Enter to continue\n",
         )
         with file_path.open("r", encoding="utf-8") as f:
             file_content = f.read()
