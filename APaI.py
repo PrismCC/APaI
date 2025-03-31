@@ -23,6 +23,8 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
         console.print("Help    message:", style="bold green")
         console.print("exit:   Exit the program", style="bold green")
         console.print("reset:  Reset agent's memory", style="bold green")
+        console.print("retry:  Retry the last question", style="bold green")
+        console.print("undo:   Undo the last question", style="bold green")
         console.print("log:    Open log file", style="bold green")
         console.print("clean:  Clean log file", style="bold green")
         console.print("save:   Save the current conversation", style="bold green")
@@ -46,6 +48,13 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
     def reset_agent() -> None:
         agent.reset_message()
         console.print("Agent's memory has been reset.", style="cyan")
+
+    def retry() -> None:
+        agent.retry(console)
+
+    def undo() -> None:
+        agent.undo(console)
+        console.print("Last dialog undone.", style="cyan")
 
     def open_log() -> None:
         if agent.open_log():
@@ -101,6 +110,12 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
         agent = env.read_save(save_path)
         console.print(f"Conversation loaded from {save_path}.", style="cyan")
         console.print(agent.get_info_table())
+        if agent.dialog_count > 0:
+            console.print("last dialog:", style="dim magenta")
+            console.print(f"{agent.message.dialogs[-2]['role']}", style="dim blue")
+            console.print(f"{agent.message.dialogs[-2]['content']}", style="dim blue")
+            console.print(f"{agent.message.dialogs[-1]['role']}", style="dim cyan")
+            console.print(f"{agent.message.dialogs[-1]['content']}", style="dim cyan")
 
     def show_markdown(console: Console) -> None:
         agent.show_markdown(console)
@@ -128,7 +143,7 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
         return file_content, terminal_input
 
     def get_multi_line_input() -> str:
-        console.print("[Multi-line mode]", style="magenta")
+        console.print("[Multi-line mode]", style="magenta", end="")
         lines = []
         while True:
             line = console.input()
@@ -159,6 +174,8 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
         "exit": lambda: exit_program(),
         "help": lambda: help_message(),
         "reset": lambda: reset_agent(),
+        "retry": lambda: retry(),
+        "undo": lambda: undo(),
         "log": lambda: open_log(),
         "clean": lambda: clean_log(),
         "save": lambda name: save(name),
@@ -213,7 +230,7 @@ def main() -> None:
     while env.config.model_id == "":
         console.print("Please select a model from the following list:", style="yellow")
         console.print(env.model_id_list)
-        model_id = console.input("Model name: ")
+        model_id = console.input("Model ID: ")
         if not env.change_model(env.match_model_id(model_id)):
             console.print("Model not found, please try again.", style="yellow")
 

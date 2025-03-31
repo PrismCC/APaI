@@ -55,7 +55,7 @@ class Agent:
 
     def change_log(self, save_path: Path) -> None:
         self.log.save_path = save_path
-        self.log.header_written = True
+        self.log.header_written = self.dialog_count > 0
 
     def get_info_table(self) -> Table:
         table = Table(show_header=True, header_style="bold magenta")
@@ -102,10 +102,9 @@ class Agent:
         return "".join(content_buffer) + "\n"
 
     def chat(self, ask: str, file: str, console: Console) -> None:
-        self.add_dialog("user", file + ask)
         self.dialog_count += 1
+        self.add_dialog("user", file + ask)
         stream = self.create_stream()
-        answer = ""
 
         if self.dialog_count < self.context_len:
             console.print(
@@ -129,6 +128,7 @@ class Agent:
         answer = self.read_stream(console, stream)
         console.print("\n--END--\n", style="yellow")
         self.last_answer = answer
+
         self.add_dialog("assistant", answer)
 
     def show_markdown(self, console: Console) -> None:
@@ -137,3 +137,29 @@ class Agent:
             return
         console.print("Markdown:\n", style="green")
         console.print(Markdown(self.last_answer))
+
+    def retry(self, console: Console) -> None:
+        if self.dialog_count == 0:
+            console.print("No dialog to retry", style="red")
+            return
+        self.message.dialogs.pop()
+        self.log.retry()
+        stream = self.create_stream()
+        console.print(f"{self.model_id}:", style="cyan")
+        answer = self.read_stream(console, stream)
+        console.print("\n--END--\n", style="yellow")
+        self.last_answer = answer
+        self.add_dialog("assistant", answer)
+
+    def undo(self, console: Console) -> None:
+        if self.dialog_count == 0:
+            console.print("No dialog to undo", style="red")
+            return
+        self.message.dialogs.pop()
+        self.message.dialogs.pop()
+        self.log.undo()
+        self.dialog_count -= 1
+        if self.dialog_count > 0:
+            self.last_answer = self.message.dialogs[-1]["content"]
+        else:
+            self.last_answer = ""

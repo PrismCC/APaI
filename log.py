@@ -49,3 +49,37 @@ class Log:
 
     def clean(self) -> None:
         self.log_path.unlink(missing_ok=True)
+
+    def retry(self) -> None:
+        with self.log_path.open("a", encoding="utf-8") as f:
+            f.write(f"{self.single_line}\n\n")
+            f.write("[retry]\n\n")
+        with self.save_path.open("r", encoding="utf-8") as f:
+            lines = f.readlines()
+        delete_count = 0
+        one = 1
+        for i in range(len(lines) - 1, -1, -1):
+            if lines[i].strip() == "===APaI===":
+                if delete_count == one:
+                    lines = lines[: i + 1]
+                    break
+                delete_count += 1
+        with self.save_path.open("w", encoding="utf-8") as f:
+            f.writelines(lines)
+
+    def undo(self) -> None:
+        with self.log_path.open("a", encoding="utf-8") as f:
+            f.write(f"{self.single_line}\n\n")
+            f.write("[undo]\n\n")
+        with self.save_path.open("r", encoding="utf-8") as f:
+            lines = f.readlines()
+        delete_count = 0
+        two = 2
+        for i in range(len(lines) - 1, -1, -1):
+            if lines[i].strip() == "===APaI===":
+                if delete_count == two:
+                    lines = lines[: i + 1]
+                    break
+                delete_count += 1
+        with self.save_path.open("w", encoding="utf-8") as f:
+            f.writelines(lines)

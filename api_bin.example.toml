@@ -6,4 +6,4 @@ models = ["deepseek-v3-241226", "deepseek-r1-250120"]
 [OtherProvider]
 api = "【服务商API】"
 url = "【调用url】"
-models = ["【支持的模型列表】"]
+models = ["【支持的模型ID列表】"]

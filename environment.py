@@ -148,5 +148,6 @@ class Environment:
         self.change_instr_key(instr_key)
         agent = self.init_agent()
         agent.message.dialogs = dialogs
+        agent.dialog_count = len(dialogs) // 2
         agent.change_log(save_path)
         return agent
