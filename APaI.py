@@ -47,30 +47,30 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
 
     def reset_agent() -> None:
         agent.reset_message()
-        console.print("Agent's memory has been reset.", style="cyan")
+        console.print("Agent's memory has been reset.", style="green")
 
     def retry() -> None:
         agent.retry(console)
 
     def undo() -> None:
         agent.undo(console)
-        console.print("Last dialog undone.", style="cyan")
+        console.print("Last dialog undone.", style="green")
 
     def open_log() -> None:
         if agent.open_log():
-            console.print("Log file opened.", style="cyan")
+            console.print("Log file opened.", style="green")
         else:
             console.print("Log file not found.", style="red")
 
     def clean_log() -> None:
         agent.clean_log()
-        console.print("Log file cleaned.", style="cyan")
+        console.print("Log file cleaned.", style="green")
 
     def change_model(model_id: str) -> None:
         nonlocal agent
         model_id = env.match_model_id(model_id)
         if env.change_model(model_id):
-            console.print(f"Model changed to {model_id}.", style="cyan")
+            console.print(f"Model changed to {model_id}.", style="green")
             agent = env.init_agent()
             console.print(agent.get_info_table())
         else:
@@ -80,7 +80,7 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
         nonlocal agent
         instr_key = env.match_instr_key(instr_key)
         if env.change_instr_key(instr_key):
-            console.print(f"Instruction changed to {instr_key}.", style="cyan")
+            console.print(f"Instruction changed to {instr_key}.", style="green")
             agent = env.init_agent()
             console.print(agent.get_info_table())
         else:
@@ -90,7 +90,7 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
         nonlocal agent
         env.change_context_len(context_len)
         agent = env.init_agent()
-        console.print(f"Context length changed to {context_len}.", style="cyan")
+        console.print(f"Context length changed to {context_len}.", style="green")
         console.print(agent.get_info_table())
 
     def save(save_name: str) -> None:
@@ -99,7 +99,7 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
         old_path = agent.log.save_path
         shutil.copy(old_path, save_path)
         agent.change_log(save_path)
-        console.print(f"Conversation saved to {save_path}.", style="cyan")
+        console.print(f"Conversation saved to {save_path}.", style="green")
 
     def load(save_name: str) -> None:
         nonlocal agent
@@ -108,13 +108,13 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
             console.print(f"Save file {save_path} does not exist.", style="red")
             return
         agent = env.read_save(save_path)
-        console.print(f"Conversation loaded from {save_path}.", style="cyan")
+        console.print(f"Conversation loaded from {save_path}.", style="green")
         console.print(agent.get_info_table())
         if agent.dialog_count > 0:
-            console.print("last dialog:", style="dim magenta")
-            console.print(f"{agent.message.dialogs[-2]['role']}", style="dim blue")
+            console.print("last dialog:", style="dim green")
+            console.print(f"{agent.message.dialogs[-2]['role']}", style="dim bold")
             console.print(f"{agent.message.dialogs[-2]['content']}", style="dim blue")
-            console.print(f"{agent.message.dialogs[-1]['role']}", style="dim cyan")
+            console.print(f"{agent.message.dialogs[-1]['role']}", style="dim bold")
             console.print(f"{agent.message.dialogs[-1]['content']}", style="dim cyan")
 
     def show_markdown(console: Console) -> None:

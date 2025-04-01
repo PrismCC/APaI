@@ -76,6 +76,8 @@ class Agent:
             model=self.model_id,
             messages=self.message.generate_messages(self.context_len),
             stream=True,
+            temperature=0.7,
+            top_p=1.0,
         )
 
     def read_stream(self, console: Console, stream: Stream) -> str:
@@ -109,7 +111,7 @@ class Agent:
         if self.dialog_count < self.context_len:
             console.print(
                 f"context: [{self.dialog_count}|{self.context_len}]",
-                style="cyan",
+                style="green",
             )
         else:
             console.print(
@@ -119,11 +121,13 @@ class Agent:
             )
 
         if file == "":
-            console.print(f"user:\n{ask}", style="blue")
+            console.print("user:", style="bold")
+            console.print(f"{ask}", style="blue")
         else:
-            console.print(f"user:\n[file content]\n{ask}", style="blue")
+            console.print("user:\n[file content]", style="bold")
+            console.print(f"{ask}", style="blue")
 
-        console.print(f"{self.model_id}:", style="cyan")
+        console.print(f"{self.model_id}:", style="bold")
 
         answer = self.read_stream(console, stream)
         console.print("\n--END--\n", style="yellow")
@@ -145,7 +149,7 @@ class Agent:
         self.message.dialogs.pop()
         self.log.retry()
         stream = self.create_stream()
-        console.print(f"{self.model_id}:", style="cyan")
+        console.print(f"{self.model_id}:", style="bold")
         answer = self.read_stream(console, stream)
         console.print("\n--END--\n", style="yellow")
         self.last_answer = answer
