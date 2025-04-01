@@ -112,9 +112,9 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
         console.print(agent.get_info_table())
         if agent.dialog_count > 0:
             console.print("last dialog:", style="dim green")
-            console.print(f"{agent.message.dialogs[-2]['role']}", style="dim bold")
+            console.print(f"{agent.message.dialogs[-2]['role']:}", style="dim bold")
             console.print(f"{agent.message.dialogs[-2]['content']}", style="dim blue")
-            console.print(f"{agent.message.dialogs[-1]['role']}", style="dim bold")
+            console.print(f"{agent.message.dialogs[-1]['role']:}", style="dim bold")
             console.print(f"{agent.message.dialogs[-1]['content']}", style="dim cyan")
 
     def show_markdown(console: Console) -> None:
@@ -200,6 +200,12 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
                     command_map[cmd](*args)
                 except TypeError:
                     console.print(f"Invalid arguments for command '{cmd}'", style="red")
+                    if cmd == "model":
+                        console.print("Available models:", style="yellow")
+                        console.print(env.model_id_list)
+                    elif cmd == "instr":
+                        console.print("Available instructions:", style="yellow")
+                        console.print(env.instr_key_list)
                 continue
             if cmd == "file":
                 file, ask = get_file_input(Path(args[0]) if args else Path(".in.txt"))
