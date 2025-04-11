@@ -143,7 +143,7 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
         return file_content, terminal_input
 
     def get_multi_line_input() -> str:
-        console.print("[Multi-line mode]", style="magenta", end="")
+        console.print("[Multi-line mode]\n", style="magenta", end="")
         lines = []
         while True:
             line = console.input()
