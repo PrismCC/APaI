@@ -156,18 +156,21 @@ def main_loop(console: Console, env: Environment) -> None:  # noqa: C901, PLR091
         if input_str.strip() == "":
             return False
         short_text_threshold = 10
-        if len(input_str) < short_text_threshold and input_str[0] != " ":
-            confirm = (
-                console.input(
-                    Text(
-                        "Are you sure you want to send this short message? (y/n): ",
-                        style="bold yellow",
-                    ),
+        if len(input_str) < short_text_threshold:
+            if input_str[0] == " ":
+                input_str = input_str[1:]
+            else:
+                confirm = (
+                    console.input(
+                        Text(
+                            "Are you sure you want to send this short message? (y/n): ",
+                            style="bold yellow",
+                        ),
+                    )
+                    .strip()
+                    .lower()
                 )
-                .strip()
-                .lower()
-            )
-            return confirm == "y"
+                return confirm == "y"
         return True
 
     command_map = {
