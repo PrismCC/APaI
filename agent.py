@@ -76,8 +76,6 @@ class Agent:
             model=self.model_id,
             messages=self.message.generate_messages(self.context_len),
             stream=True,
-            temperature=0.7,
-            top_p=1.0,
         )
 
     def read_stream(self, console: Console, stream: Stream) -> str:
