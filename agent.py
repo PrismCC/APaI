@@ -76,6 +76,8 @@ class Agent:
             model=self.model_id,
             messages=self.message.generate_messages(self.context_len),
             stream=True,
+            temperature=1.0,
+            top_p=1.0,
         )
 
     def read_stream(self, console: Console, stream: Stream) -> str:
@@ -106,7 +108,7 @@ class Agent:
         self.add_dialog("user", file + ask)
         stream = self.create_stream()
 
-        if self.dialog_count < self.context_len:
+        if self.dialog_count <= self.context_len:
             console.print(
                 f"context: [{self.dialog_count}|{self.context_len}]",
                 style="green",
@@ -114,7 +116,7 @@ class Agent:
         else:
             console.print(
                 f"context: [{self.context_len}|{self.context_len}]"
-                f"{self.dialog_count - self.context_len} context(s) expired",
+                f"  {self.dialog_count - self.context_len} context(s) expired",
                 style="yellow",
             )
 
